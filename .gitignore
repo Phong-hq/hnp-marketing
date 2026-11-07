@@ -1,0 +1,18 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dữ liệu thô
+research/**/raw/
+
+# misc
+node_modules/
+.DS_Store
+Thumbs.db
+
+# bài viết content (chỉ lưu trên máy, không đưa lên git)
+content/
+
+# file nén tạo lại được từ claude-chat/*/
+claude-chat/*.zip
