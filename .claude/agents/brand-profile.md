@@ -13,6 +13,7 @@ Dựng **Brand Profile** đầy đủ cho thương hiệu được giao, chỉ d
 ## Trước khi bắt đầu
 - Đọc **`templates/research-output.md`** — khuôn và quy tắc đầu ra bắt buộc.
 - Đọc `research/<brand-slug>/` (nếu có) để không làm lại phần đã có.
+- Đọc `brand/<brand-slug>/` (nếu có: `brand.md`, `brand.json`…) — hồ sơ do chủ thương hiệu cung cấp, **nguồn ưu tiên** cho định danh, địa chỉ, chính sách, tone, quy tắc nội dung (mục "Điểm lệch cần lưu ý"). Kiểm lại phần công khai trên web; chỗ web khác hồ sơ thì ghi cả hai và theo hồ sơ nếu hồ sơ ghi "đã chốt/đã xác nhận". Ghi nguồn dạng `brand/<slug>/brand.md (hồ sơ nội bộ, <ngày>)` — không có URL nên không đưa vào `sources.md`. Mục `[THIẾU]` trong hồ sơ → đưa vào `gaps`, không tự bịa.
 
 ## Quy trình
 1. Thu thập từ: website chính (trang chủ, giới thiệu, danh mục, chính sách, liên hệ), fanpage/Zalo OA/TikTok/YouTube, gian hàng Shopee/Lazada/Tiki, Google Maps, thông tin pháp nhân (masothue, trang vàng).

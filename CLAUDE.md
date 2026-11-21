@@ -5,22 +5,65 @@ Hệ thống research & marketing cho các thương hiệu. Thương hiệu đ�
 ## Cấu trúc thư mục
 
 ```
-.claude/agents/          8 research agent + 5 content agent (tên file = tên agent)
+.claude/agents/          8 research agent + 7 content agent (tên file = tên agent)
 .claude/skills/
   ├─ hnp-research/       điều phối research → báo cáo + brief content
   └─ humanizer/          bỏ giọng AI (bản gốc blader/humanizer v3.1.0, MIT) + vi-patterns.md
-templates/               khuôn: research-output.md, report.md, content-brief.md
+templates/               khuôn: research-output.md, report.md, content-brief.md, web-metrics.md
 scripts/youtube/         yt-comments.mjs — lấy comment YouTube
-research/<brand-slug>/   file nền NN-*.md, sources.md, youtube/raw/ (gitignore)
+brand/<brand-slug>/      thông tin thương hiệu gốc (brand.md…), CHỈ trên máy — `brand/` nằm trong .gitignore, không commit/push
+research/<brand-slug>/   file nền NN-*.md, sources.md, trend-rules.md, youtube/raw/ (gitignore)
   ├─ reports/            báo cáo tóm tắt mỗi lần research (YYYY-MM-DD-<loai>-<chu-de>.md)
-  └─ briefs/             brief cho người/AI viết content (cùng tên với báo cáo)
+  ├─ briefs/             brief cho người/AI viết content (cùng tên với báo cáo; `loai`: seo | trend | tong-hop)
+  ├─ raw/web/            CSV xuất từ Search Console / GA4 (gitignore)
+  └─ raw/khach/          câu hỏi khách từ inbox FB/Zalo người dùng dán vào (gitignore)
 content/<brand-slug>/
   ├─ <ten-brief>/        facebook.md, blog.md, pomelli.md, images/… + review.md + publish.md
-  ├─ log.md              số liệu bài đã đăng
-  └─ learnings.md        bài học (ID L<n>) — research & content lần sau đọc
+  ├─ log.md              số liệu bài đã đăng (mạng xã hội + cột web)
+  ├─ web-log.md          số liệu web theo trang/truy vấn (Search Console, GA4)
+  └─ learnings.md        bài học (ID L<n>) — research, gap-analysis & trend-scout lần sau đọc
 _archive/                bản cũ không dùng nữa (agents-v1: bộ *-researcher)
 .env.example             mẫu biến môi trường → copy thành .env
 ```
+
+## Các luồng chạy (tổng quan)
+
+Không biết chạy gì tiếp → gõ **`/de-xuat`** (đọc trạng thái repo, đề xuất luồng + câu lệnh).
+
+| # | Luồng | Agent | Khi nào chạy | Đầu ra chính |
+|---|-------|-------|--------------|--------------|
+| 1 | **Research nền** | 8 agent research (4 đợt) + `00-summary` | Lần đầu; sau đó mỗi quý, hoặc khi đổi định vị/ngành hàng | `research/<slug>/NN-*.md` |
+| 2 | **Hiểu khách** | `customer-youtube` → `customer-personas` | Mỗi tháng; khi inbox có nhiều câu hỏi lặp lại; khi ra dòng sản phẩm mới; khi `learnings.md` cho thấy bài không chạm đúng khách | `30-*.md`, `31-customers.md` (cập nhật, giữ ID) |
+| 3 | **Theo dõi thị trường** | `market-vendor-products`, `market-competitors` (chạy lẻ) | Hãng ra model mới, đối thủ đổi giá/chạy khuyến mãi; định kỳ mỗi tháng | `22-*.md`, `21-*.md` |
+| 4 | **Chọn chủ đề** | `gap-analysis` (SEO) / `trend-scout` (trend) | Mỗi tuần, khi không còn brief `san-sang` | báo cáo + brief |
+| 5 | **Làm bài** | `content-write` → `content-images` → `content-review` → `content-publish` → *(đăng tay)* → `content-measure` | Mỗi brief | `content/<slug>/<ten-brief>/`, `log.md`, `learnings.md` |
+
+```
+ 1 Research nền ─┬──────────────────────────────┐
+                 ▼                              ▼
+ 2 Hiểu khách ──> 31-customers ──> 4 Chọn chủ đề ──> brief ──> 5 Làm bài ──> learnings.md
+ 3 Theo dõi TT ──> 21/22 ─────────────^                                   │
+        ▲                                                                 │
+        └────────────── lần sau đọc learnings ◄────────────────────────────┘
+```
+
+### Luồng 2 · Hiểu khách
+
+Chạy nhóm 3 độc lập, không cần chạy lại cả research. Nguồn tiếng nói khách hàng:
+
+| Nguồn | Ai lấy | Cách |
+|-------|--------|------|
+| Comment YouTube | `customer-youtube` | YouTube Data API (cần `YOUTUBE_API_KEY`) |
+| Review Shopee/Lazada, Google Maps, Voz/Tinhte, nhóm & fanpage Facebook công khai | `customer-personas` | web search/fetch (Facebook không kéo hàng loạt được) |
+| **Inbox Facebook/Zalo, câu hỏi qua điện thoại** của chính HNP | **người dùng** dán vào `research/<slug>/raw/khach/YYYY-MM-DD-inbox.md` (gitignore) | `customer-personas` đọc; bỏ tên/SĐT trước khi trích |
+
+Các bước:
+1. (Tuỳ chọn) dán câu hỏi khách tháng này vào `raw/khach/`.
+2. `customer-youtube` với từ khoá mới (sản phẩm mới, câu hỏi hay gặp trong inbox).
+3. `customer-personas` cập nhật `31-customers.md` — giữ ID, insight mới đánh số tiếp, báo insight mới/đổi.
+4. Insight mới có câu hỏi tìm kiếm → chạy `gap-analysis` (hoặc `channel-seo` nếu từ khoá chưa có trong `41`) để thành brief.
+
+> Chạy luồng hiểu khách cho hoang-nam-phat: customer-youtube với từ khoá "camera wifi ezviz", "lắp camera gia đình", rồi customer-personas (đọc thêm raw/khach/).
 
 ## Research agents (`.claude/agents/`) — chia theo công dụng
 
@@ -52,23 +95,39 @@ Tất cả file nằm ở `research/<brand-slug>/` — `<brand-slug>`: tên khô
                                └────────────────────────────────────^
 ```
 
-## Content agents (nhóm 5) — sau khi có brief
+## Content agents (nhóm 5) — chọn chủ đề → viết → đo
+
+Có 2 làn chọn chủ đề, cùng đổ vào một đường viết–duyệt–đăng–đo:
 
 ```
-brief ──> content-write ──> content-review ──> content-publish ──> (người dùng đăng) ──> content-measure ──> learnings.md ──> research lần sau
-            ↑ humanizer        ↑ humanizer      (gói đăng + UTM)     ghi link: content-publish
-            └──── can-sua ─────┘
+Làn SEO  : content-measure (nhập web) ──> gap-analysis ──> brief(seo)  ──┐
+Làn trend: trend-scout (quét + lọc theo trend-rules.md) ──> brief(trend) ┤
+                                                                         ▼
+brief ──> content-write ──> content-review ──> content-publish ──> (người dùng đăng) ──> content-measure ──> learnings.md ──┐
+            ↑ humanizer        ↑ humanizer      (gói đăng + UTM)     ghi link: content-publish                               │
+            └──── can-sua ─────┘                                                                                             │
+        gap-analysis / trend-scout / research lần sau đọc ◄─────────────────────────────────────────────────────────────────┘
 ```
+
+- **Làn SEO**: bài bền, nhắm người đang cần mua, đăng Website (+ Facebook dẫn về).
+- **Làn trend**: bài ngắn sống 2–3 ngày, chỉ Facebook/TikTok, **luôn duyệt tay**, quá `han_dung` thì bỏ. Không đăng lên Website.
+- Số liệu web: đưa file vào `research/<slug>/raw/web/` rồi chạy `content-measure` (khuôn `templates/web-metrics.md`). Hai cách lấy: (A) tự xuất CSV từ Search Console/GA4; (B) gõ **`/lay-so-web`**, agent chính mở Chrome trên máy (extension Claude in Chrome, đã đăng nhập Google), chỉ xem và xuất báo cáo, cất file vào `raw/web/` rồi gọi `content-measure`.
 
 | Bước | Agent | Đầu vào | Đầu ra |
 |------|-------|---------|--------|
+| 0a · Chọn chủ đề SEO | `gap-analysis` | `web-log.md`, `log.md`, `learnings.md`, `41-seo-keywords.md` | báo cáo `loai: noi-dung` + brief `loai: seo` |
+| 0b · Chọn trend | `trend-scout` | `trend-rules.md`, web công khai, `learnings.md` | báo cáo `loai: xu-huong` + brief `loai: trend` (có `han_dung`) |
 | 1 · Viết | `content-write` | `research/<slug>/briefs/<ten-brief>.md` | `content/<slug>/<ten-brief>/<kenh>.md` (`status: nhap`) |
 | 1b · Ảnh blog | `content-images` | ảnh Pomelli người dùng tải về `<ten-brief>/images/` | ảnh đổi tên + alt text gắn vào `blog.md`; kết quả ở cuối `pomelli.md` |
 | 2 · Duyệt | `content-review` | thư mục bài | `review.md`; bài → `da-duyet` hoặc `can-sua` |
 | 3 · Đăng | `content-publish` | bài `da-duyet` / link sau khi đăng | `publish.md`; bài → `da-dang`; dòng mới trong `log.md` |
-| 4 · Đo | `content-measure` | số liệu người dùng đưa | `log.md`, `learnings.md` |
+| 4 · Đo | `content-measure` | số liệu bài đăng + CSV Search Console/GA4 người dùng đưa | `log.md`, `web-log.md`, `learnings.md` |
 
 Ví dụ:
+> Dùng content-measure nhập số liệu web từ research/hoang-nam-phat/raw/web/2026-11-10-gsc-queries.csv
+> /lay-so-web hoang-nam-phat   (lấy Search Console + GA4 qua Chrome trên máy rồi nhập luôn)
+> Dùng gap-analysis cho hoang-nam-phat, tối đa 3 brief
+> Dùng trend-scout cho hoang-nam-phat
 > Dùng content-write viết bài theo brief research/hoang-nam-phat/briefs/2026-11-07-gia-e50ug.md
 > (Blog) Tạo ảnh trên Pomelli theo `pomelli.md`, tải về `images/` → Dùng content-images gắn ảnh cho content/hoang-nam-phat/2026-11-07-gia-e50ug
 > Dùng content-review duyệt content/hoang-nam-phat/2026-11-07-gia-e50ug

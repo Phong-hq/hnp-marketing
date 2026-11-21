@@ -3,6 +3,10 @@
 .env.*
 !.env.example
 
+# thông tin thương hiệu gốc (chỉ lưu trên máy, không đưa lên git)
+brand/
+!brand/README.md
+
 # dữ liệu thô
 research/**/raw/
 
