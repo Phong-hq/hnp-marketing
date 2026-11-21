@@ -12,7 +12,7 @@ Hệ thống research & marketing cho các thương hiệu. Thương hiệu đ�
 templates/               khuôn: research-output.md, report.md, content-brief.md, web-metrics.md
 scripts/youtube/         yt-comments.mjs — lấy comment YouTube
 brand/<brand-slug>/      thông tin thương hiệu gốc (brand.md…), CHỈ trên máy — `brand/` nằm trong .gitignore, không commit/push
-research/<brand-slug>/   file nền NN-*.md, sources.md, trend-rules.md, youtube/raw/ (gitignore)
+research/<brand-slug>/   file nền NN-*.md, sources.md, trend-rules.md, youtube/raw/ — CHỈ trên máy, cả `research/` nằm trong .gitignore, không commit/push
   ├─ reports/            báo cáo tóm tắt mỗi lần research (YYYY-MM-DD-<loai>-<chu-de>.md)
   ├─ briefs/             brief cho người/AI viết content (cùng tên với báo cáo; `loai`: seo | trend | tong-hop)
   ├─ raw/web/            CSV xuất từ Search Console / GA4 (gitignore)

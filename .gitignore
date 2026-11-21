@@ -7,8 +7,8 @@
 brand/
 !brand/README.md
 
-# dữ liệu thô
-research/**/raw/
+# research (chỉ lưu trên máy, không đưa lên git)
+research/
 
 # misc
 node_modules/
